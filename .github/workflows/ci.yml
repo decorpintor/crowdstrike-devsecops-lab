@@ -1,0 +1,45 @@
+
+name: DevSecOps CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Run tests
+        run: pytest -q
+
+      - name: Static security analysis
+        run: bandit -q -r app
+
+      - name: Build container
+        run: docker build -t crowdstrike-devsecops-lab:${{ github.sha }} .
+
+      - name: Scan container with Trivy
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: crowdstrike-devsecops-lab:${{ github.sha }}
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: "os,library"
+          severity: "CRITICAL,HIGH"
