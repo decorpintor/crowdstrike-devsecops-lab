@@ -1,0 +1,2 @@
+NAME           STATUS   AGE   LABELS
+security-lab   Active   13m   kubernetes.io/metadata.name=security-lab,pod-security.kubernetes.io/audit=restricted,pod-security.kubernetes.io/enforce=restricted,pod-security.kubernetes.io/warn=restricted

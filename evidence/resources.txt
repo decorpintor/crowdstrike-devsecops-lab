@@ -1,0 +1,5 @@
+NAME                                READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/falcon-triage-api   1/1     1            1           12m
+
+NAME                        TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)    AGE
+service/falcon-triage-api   ClusterIP   10.96.217.6   <none>        8000/TCP   12m

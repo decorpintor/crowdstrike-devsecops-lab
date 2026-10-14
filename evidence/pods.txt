@@ -1,0 +1,2 @@
+NAME                                 READY   STATUS    RESTARTS   AGE   IP            NODE                       NOMINATED NODE   READINESS GATES
+falcon-triage-api-6c49c5495b-rsshq   1/1     Running   0          12m   10.244.0.16   devops-lab-control-plane   <none>           <none>
