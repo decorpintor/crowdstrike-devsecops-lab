@@ -75,9 +75,11 @@ def build_alert(data: AlertIn) -> Alert:
     score, severity = score_alert(data)
     now = datetime.now(timezone.utc)
 
+    values = data.model_dump()
+    values["observed_at"] = data.observed_at or now
+
     return Alert(
-        **data.model_dump(),
-        observed_at=data.observed_at or now,
+        **values,
         received_at=now,
         risk_score=score,
         severity=severity,
