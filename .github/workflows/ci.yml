@@ -35,7 +35,7 @@ jobs:
         run: docker build -t crowdstrike-devsecops-lab:${{ github.sha }} .
 
       - name: Scan container with Trivy
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.36.0
         with:
           image-ref: crowdstrike-devsecops-lab:${{ github.sha }}
           format: table
