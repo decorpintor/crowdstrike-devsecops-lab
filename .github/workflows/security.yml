@@ -1,21 +1,33 @@
-name: Dependency and Kubernetes Security
+name: Security Pipeline
 
 on:
   push:
     branches: ["main"]
   pull_request:
+    branches: ["main"]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  dependency-audit:
-    name: Python Dependency Audit
+  secret-scan:
+    name: Secret Detection (Gitleaks)
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
+      - name: Scan for exposed secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  python-security:
+    name: Tests, SAST, and Dependency Audit
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -29,18 +41,23 @@ jobs:
             requirements.txt
             requirements-dev.txt
 
-      - name: Install dependency auditor
-        run: python -m pip install pip-audit
+      - name: Install dependencies and scanners
+        run: |
+          python -m pip install -r requirements-dev.txt
+          python -m pip install pip-audit
 
-      - name: Audit application and development dependencies
-        run: pip-audit -r requirements-dev.txt
+      - name: Run unit tests
+        run: python -m pytest -v
 
-  kubernetes-manifest-scan:
-    name: Kubernetes Manifest Security
+      - name: Run Bandit SAST
+        run: bandit -r app -ll
+
+      - name: Audit Python dependencies
+        run: pip-audit -r requirements.txt
+
+  iac-scan:
+    name: Kubernetes IaC Scan (Checkov)
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -54,4 +71,27 @@ jobs:
         run: python -m pip install checkov
 
       - name: Scan Kubernetes manifests
-        run: checkov --directory k8s --framework kubernetes --soft-fail
+        run: checkov --directory k8s --framework kubernetes
+
+  container-scan:
+    name: Build and Scan Container (Trivy)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build local image
+        run: |
+          docker build \
+            --tag crowdstrike-devsecops-lab:${{ github.sha }} \
+            .
+
+      - name: Scan image for high and critical vulnerabilities
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: crowdstrike-devsecops-lab:${{ github.sha }}
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: "os,library"
+          severity: "HIGH,CRITICAL"
